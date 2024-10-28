@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="1e646966-55a9-48f5-9c51-3964361f719a" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<configuration doc:name="Configuration" doc:id="1c542470-ef4a-43b6-aedc-654e3dc92fc7" defaultErrorHandler-ref="global-error-handlerError_Handler" />
+	<flow name="errorhandlingFlow" doc:id="1cfa8ab4-279e-4140-a8c4-40e5f0ff4526" >
+		<http:listener doc:name="Listener" doc:id="9f226730-3f83-4b8e-bc96-ebf14579fd84" path="/global" config-ref="HTTP_Listener_config">
+			<http:error-response >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="apple" doc:name="Set Variable" doc:id="eced8799-6a6c-496c-a081-17d17f701f52" variableName="fruit"/>
+		<flow-ref doc:name="Flow Reference" doc:id="0242849b-09be-4d03-ae18-14805baf6ed0" name="errorhandlingFlow1"/>
+		<ee:transform doc:name="Success" doc:id="64becb42-4fa3-4fe3-8352-82ce395db803" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Success"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="eeaeee4e-2af3-4fcd-b141-857c52c282f0" message="#[payload]"/>
+	</flow>
+	<flow name="errorhandlingFlow1" doc:id="d5111910-b1dc-4ab1-a09d-87e2ee9ca501" >
+		<try doc:name="Try" doc:id="16cb338e-7174-4ea7-87cd-e350c7ac849f" >
+			<http:request method="GET" doc:name="Request" doc:id="15f0afda-df3a-48ae-98e8-d75974d43913" url="xyz.sjkd.com" />
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ee06ecfa-ddfc-4404-a5f1-07ea1c92b87d" >
+					<ee:transform doc:name="Transform Message" doc:id="90a40b60-dc6b-4d09-9a50-0d46aee3c638" >
+						<ee:message >
+							<ee:set-payload ><![CDATA["Error in Try Block"]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="594a77b9-30a9-4d3b-a036-b11028a06ba6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Private Flow"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="70c8a2d5-0cec-453c-8da1-e5df53fcc4e4" >
+				<ee:transform doc:name="Transform Message" doc:id="03fd6f1f-3ab9-4616-9c8c-39b0db4b191d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Transform Message in Private Error Handling"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="af0cd477-143b-4c6b-853c-22887339d382" message='#["Logger in Private Error Handler"]' />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<error-handler name="global-error-handlerError_Handler" doc:id="9001965a-07e4-4aa0-a092-0cfa074a453c" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="028a146a-18e1-4ee3-bc0b-ddc62f09ac31" type="HTTP:CONNECTIVITY">
+			<ee:transform doc:name="Transform Message" doc:id="73c8b5f8-7248-4b12-a53c-da86d7565edd" >
+				<ee:message >
+					<ee:set-payload ><![CDATA["Error Occured in Global Error Handler - On Error Propagate."]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1767b983-441f-49c3-bfff-26b71e6a1e4b" type="HTTP:CONNECTIVITY">
+			<ee:transform doc:name="Transform Message" doc:id="3c274b7a-756a-4a0f-9e05-c855e4326194" >
+				<ee:message >
+					<ee:set-payload ><![CDATA["Error Occured in Global Error Handler - On Error Continue."]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-continue>
+	</error-handler>
+</mule>
